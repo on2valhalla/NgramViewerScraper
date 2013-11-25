@@ -7,11 +7,11 @@ import os
 import sys
 import time
 
-start_time = time.time()
+parse_start_time = time.time()
 
 
 def main(directory, regex, counts_file_name):
-    global start_time
+    global parse_start_time
     counts = {}
     start_time = time.time()
 
@@ -88,7 +88,7 @@ def main(directory, regex, counts_file_name):
 
 
 def print_time(string):
-    global start_time
+    global parse_start_time
     #print("%10f secs: %s" % (time.time() - start_time, string), end="")
     #sys.stderr.write('[%s] Downloading(%-*i of %i): %*s' % (str(disp_time().time())[:8], digits, i+1, n,
     #                                                       maxlen + 2, file_name))
