@@ -1,5 +1,7 @@
 
 import gzip
+from multiprocessing import Queue
+from Queue import Empty
 from time import time
 from os.path import basename, exists
 
@@ -10,24 +12,27 @@ class NGramViewerParser(object):
     but pushes finished files up to caller in a multiprocessing.Queue.
     Should be multi-process safe.
     """
-    def __init__(self, to_process_q, processed_q, output_q, download_event, parse_event):
+    def __init__(self, to_process_q, processed_q, output_q, download_event):
         self.to_process_q = to_process_q
         self.output_q = output_q
-        self.done_q = processed_q
+        self.processed_q = processed_q
         self.download_event = download_event
-        self.parse_event = parse_event
+        self.counter = Queue()
+        self.counter.put(1)
 
-    def parse(self, counts_dict, num_files, max_len=50):
+    def parse(self, counts_dict, num_files, parse_event, max_len=50):
         # String formatting setup
         digits = len('%d' % num_files)
-        parse_start_time = time()
+        total_time = 0
 
         i = 0
         while not self.download_event.is_set() or not self.to_process_q.empty():
-            i += 1
             # Attempt to parse the file
             try:
-                full_path = self.to_process_q.get()
+                full_path = self.to_process_q.get(block=True, timeout=.5)
+                i = self.counter.get()
+                self.counter.put(i + 1)
+
                 file_start_time = time()
                 # Check if the file exists
                 if full_path and exists(full_path):
@@ -58,16 +63,23 @@ class NGramViewerParser(object):
                         line = next_line
                         if j % 10000 == 0:
                             self.output_q.put(['(%-*i of %i) Processing:\t%*s'
-                                              % (digits, i, num_files, max_len, '%i records' % j), '\r'])
-                    self.output_q.put(['(%-*i of %i) Processed:\t%*s\n'
+                                              % (digits, i, num_files, max_len, '%i records' % j), '\r', ''])
+
+                    file_time = time() - file_start_time
+                    total_time += file_time
+
+                    self.output_q.put(['(%-*i of %i) Processed:\t%*s'
                                       % (digits, i, num_files, max_len,
                                          '%i records in %s min'
-                                            % (j, "{:5.2f}".format((time() - file_start_time)/60))), '\r'])
+                                            % (j, "{:5.2f}".format(file_time/60))), '\r', '\n'])
+                    self.processed_q.put(ngram_file_name)
+
                     ngram_file.close()
             except KeyboardInterrupt:
                 self.output_q.put('User Interrupt, cleaning up')
-                i -= 1
                 break
+            except Empty:
+                continue
 
-        self.output_q.put("Processed %i files in %s min" % (i, "{:5.2f}".format((time() - parse_start_time)/60)))
-        self.parse_event.set()
+        self.output_q.put("Processed %i files in %s min" % (i, "{:5.2f}".format((time() - total_time)/60)))
+        parse_event.set()

@@ -53,6 +53,7 @@ def main(page, regex, path):
             sys.exit(0)
         sys.stderr.write(' of size %s MB in %5.2f min\n' % ("{:7.2f}".format(float(os.stat(full_path).st_size)/1000000),
                                                             (time.time() - download_start)/60))
+        br.clear_history()
 
     sys.stderr.write('\ndownloaded %i files to %s directory in %15f seconds\n' % (n, path, time.time()-start_time))
 

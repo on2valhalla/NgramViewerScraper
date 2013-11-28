@@ -45,7 +45,7 @@ class Downloader(object):
 
     # Downloads links from the download queue to files and outputs progress.
     # NOTE: It is probably better if for each link something gets put on the parse queue, for now: None.
-    def download(self, download_dir, num_links, max_len=50):
+    def download(self, download_dir, num_links, max_len=50, dest_dir=None):
         # Setup browser
         br = Browser()
         br.set_handle_robots(False)
@@ -68,14 +68,15 @@ class Downloader(object):
                 full_path = join(download_dir, file_name)
 
                 # Check if the file already exists
-                if exists(full_path):
+                if exists(full_path) or (dest_dir and exists(join(dest_dir, file_name))):
                     self.output_q.put('(%-*i of %i) File exists:\t%*s'
                                       % (digits, i, num_links, max_len, file_name))
                     continue
 
                 self.output_q.put('(%-*i of %i) Downloading:\t%*s'
-                                  % (digits, i, num_links, max_len,file_name))
+                                  % (digits, i, num_links, max_len, file_name))
                 br.retrieve(link, filename=full_path)
+                br.clear_history()
                 num_files += 1
             except KeyboardInterrupt:
                 self.output_q.put('(%-*i of %i) User Interrupt:\t%*s'
