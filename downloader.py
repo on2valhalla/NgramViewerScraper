@@ -71,7 +71,7 @@ class Downloader(object):
                 if exists(full_path) or (dest_dir and exists(join(dest_dir, file_name))):
                     self.output_q.put('(%-*i of %i) File exists:\t%*s'
                                       % (digits, i, num_links, max_len, file_name))
-                    continuet
+                    continue
 
                 self.output_q.put('(%-*i of %i) Downloading:\t%*s'
                                   % (digits, i, num_links, max_len, file_name))
