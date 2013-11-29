@@ -91,15 +91,16 @@ class Downloader(object):
                 num_files += 1
             except KeyboardInterrupt:
                 self.output_q.put('(%-*i of %i) User Interrupt:\t%*s'
-                                  % (digits, i, num_links, max_len, "Deleting: %s" % full_path))
+                                  % (digits, i, num_links, max_len, "Deleting: %s" % file_name))
                 if exists(full_path):
                     remove(full_path)
                 i -= 1
                 break
             except URLError:
                 self.output_q.put('(%-*i of %i) URL Error:\t%*s'
-                                  % (digits, i, num_links, max_len, "Skipping: %s" % full_path))
-                remove(full_path)
+                                  % (digits, i, num_links, max_len, "Skipping: %s" % file_name))
+                if exists(full_path):
+                    remove(full_path)
             self.parse_q.put(full_path)
             self.output_q.put('(%-*i of %i) Downloaded:\t%*s' % (digits, i, num_links, max_len,
                                                                  '%s MB in %s min' % ("{:7.2f}".format(float(
