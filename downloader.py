@@ -3,7 +3,7 @@ from mechanize import Browser
 from os import remove, rename, stat
 from os.path import join, basename, exists
 from time import time
-from urllib2 import URLError
+from urllib2 import URLError, urlopen
 
 
 class Downloader(object):
@@ -75,8 +75,19 @@ class Downloader(object):
 
                 self.output_q.put('(%-*i of %i) Downloading:\t%*s'
                                   % (digits, i, num_links, max_len, file_name))
-                br.retrieve(link, filename=full_path)
-                br.clear_history()
+
+                #br.retrieve(link, filename=full_path)
+                #br.clear_history()
+
+                req = urlopen(link)
+                size = int(req.info()["Content-Length"])
+
+                with open(full_path, 'wb') as fp:
+                    for chunk in iter(lambda: req.read(8 * 1024), ''):
+                        if not chunk:
+                            break
+                        fp.write(chunk)
+
                 num_files += 1
             except KeyboardInterrupt:
                 self.output_q.put('(%-*i of %i) User Interrupt:\t%*s'
